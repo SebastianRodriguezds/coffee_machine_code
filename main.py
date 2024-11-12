@@ -1,94 +1,124 @@
-MENU = {
-  "expresso": {
-    "ingredients": {
-      "water" : 50,
-      "coffee" : 18,
-    },
-    "cost" : 1.5,
-  },
-      "latte": {
-    "ingredients": {
-      "water" : 200,
-      "milk" : 150,
-      "coffee" : 24,
-    },
-    "cost" : 2.5,
-  },
-      "cappuccino": {
-    "ingredients": {
-      "water" : 250,
-      "milk" : 100,
-      "coffee" : 24,
-    },
-    "cost" : 3.0,
-  },
-}
+class CoffeeMaker:
+  def report(self):
+        resources_quantity = ""
+        for resource in resources_list:
+            if resource.name == "water" or resource.name == "milk":
+                unit = "ml"  
+            elif resource.name == "coffee":
+                unit = "g"
+            resources_quantity += f"{resource.name}: {resource.quantity} {unit}\n"
+        print(resources_quantity)
+  
 
-resources = {
-  "water" : 300,
-  "milk" : 200,
-  "coffee" : 100,
-}
+  def is_resources_sufficient(self, drink):
+     for ingredient, amount_needed in drink.ingredients.items():
+        resource = next((r for r in resources_list if r.name == ingredient), None)
+        if resource is None:
+           print(f"Error no se encontro {ingredient}.")
+           return False
+        
+        if resource.quantity < amount_needed:
+           print(f"There is not enough {ingredient}. More needed {amount_needed}")
+           return False
+     return True
+  
+  def make_coffee(self,drink):
+     for ingredient, amount_needed in drink.ingredients.items():
+        resource = next((r for r in resources_list if r.name == ingredient), None)
 
-def is_resource_sufficient(order_ingredints):
-  """Returns true when order can be made"""
-  for item in order_ingredints:
-    if order_ingredints[item] >= resources[item]:
-      print(f"Sorry there is not enough {item}.")
-      return False
-    else:
-      resources[item] -= order_ingredints[item]
-  return True
+        if resource:
+           if resource.quantity >= amount_needed:
+              resource.quantity -= amount_needed
+              
+class Resources:
+  def __init__(self, name, quantity):
+    self.name = name
+    self.quantity = quantity
 
-def process_coins():
-  """Returns the total calculated from coins inserted"""
-  print("Plase insert coins.")
-  total = int(input("How many quarters?: ")) * 0.25
-  total += int(input("How many dimes?: ")) * 0.1
-  total += int(input("How many nickles?: ")) * 0.05
-  total += int(input("How many pennies?: ")) * 0.01
-  return total
+water = Resources("water", 300)
+milk = Resources("milk", 200)
+coffee = Resources("coffee", 100)
 
-def is_transaction_succesful(money_received, drink_cost): 
-  """Return true if payment accepted or false if money is insufficient."""
-  if money_received >= drink_cost:
-    global profit
-    profit+= drink_cost
-    change = round((money_received - drink_cost), 2)
-    print(f"Here is ${change} in change.")
+resources_list = [water,milk,coffee]
 
-    return True
-  else:
-    print("Sorry that's not enought money. Money refunded.")
-    return False
+class MenuItem:
+  def __init__(self, name, cost, ingredients):
+    self.name = name
+    self.cost = cost
+    self.ingredients = ingredients
 
+class Menu:    
+  def get_items(self):
+    menu = ""
+    for item in menu_list:
+        menu+= f"{item.name}/"
+    return menu
 
+  def find_drink(self, order_name):
+    for item in menu_list:
+        if order_name == item.name:
+          return item
+    return None    
+           
 
-# TODO: 1. Print report of all coffe machin eresources
-# TODO: 2. Check resources sufficient to make drink order
+class MoneyMachine:
+   def report(self):
+     print(f"Current profit: ${profit}")
+
+   def make_payment(self, cost):
+      coins = {
+         "quarters" : 0.25,
+         "dimes" : 0.10,
+         "nickels" : 0.05,
+         "pennies" : 0.01
+      }
+      total_payment = 0
+      print("Please insert coins.")
+
+      for coin, value in coins.items():
+         while True:
+            try:
+               coin_count = int(input(f"How many {coin}?: "))
+               if coin_count < 0:
+                  print("Please enter a non-negative number.")
+               else:
+                  total_payment += coin_count * value
+                  break
+            except ValueError:
+               print("Invalid input. Please enter a valid integer.")
+      if total_payment >= cost:
+         change = total_payment - cost
+         print(f"Payment successful. Your change is: ${change:.2f}")
+         return True
+      else:
+         print(f"Sorry, that's not enough money. You still need ${cost-total_payment:.2f}.")
+         return False       
+      
+
+expresso = MenuItem("expresso", 1.5, {"water": 50, "coffee": 18})
+latte = MenuItem("latte", 2.5, {"water": 200, "milk": 150, "coffee": 24})
+cappuccino = MenuItem("cappuccino", 3.0, {"water": 250, "milk": 100, "coffee": 24})
+
+menu_list = [expresso,latte,cappuccino]
+menu = Menu()
 profit = 0
 is_on = True
+my_money_machine = MoneyMachine()
+coffee_maker = CoffeeMaker()
+
 
 
 while is_on:
-  choice = input("Waht would you like? (expresso/latte/cappuccino): ").lower()
+  options = menu.get_items()
+  choice = input(f"Waht would you like? ({options}): ").lower()
   if choice == "off":
      is_on = False
   elif choice == "report":
-     print(f"Water: {resources['water']}ml\nMilk: {resources['milk']}ml\nCoffee: {resources['coffee']}g\nMoney: £ {profit}")
+    coffee_maker.report()
+    my_money_machine.report()
   else:
-    drink = MENU[choice]
-    if is_resource_sufficient(drink["ingredients"]):    
-      payment = process_coins()
-      if is_transaction_succesful(payment, drink["cost"]):
-        print(f"Here is your {choice}. Enjoy!")
-
-
-
-
-    
-
-      
-    
-    
+    drink = menu.find_drink(choice)
+    if coffee_maker.is_resources_sufficient(drink) and my_money_machine.make_payment(drink.cost):
+        profit += drink.cost
+        coffee_maker.make_coffee(drink)
       
